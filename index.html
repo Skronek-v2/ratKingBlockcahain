@@ -4,41 +4,54 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Contract Interaction</title>
+
+    <!-- Google Font UnifrakturMaguntia -->
+    <link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&display=swap" rel="stylesheet">
+
     <style>
         body {
-            background-color: lightpink;
+            background-image: url('hBackground.png'); /* Set background */
+            background-size: cover;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             height: 100vh;
             margin: 0;
-            font-family: 'Blackletter', serif; /* Use blackletter typefaces */
+            font-family: 'UnifrakturMaguntia', cursive; /* Use UnifrakturMaguntia font */
             transition: background-color 0.2s;
+            color: #ff69b4; /* Bright pink font color */
+            cursor: url('strawbCursor.png'), auto;
+            cursor: url('strawbCursor.png'), pointer; /* Custom cursor */
         }
 
         h1 {
             margin-bottom: 20px;
             font-size: 32px;
+            background: linear-gradient(90deg, rgb(255, 0, 144), rgb(255, 124, 198), rgb(255, 152, 214), rgb(255, 152, 214), rgb(255, 152, 214), rgb(255, 124, 198), rgb(255, 0, 144));
+            -webkit-background-clip: text;
+            color: transparent;
+            animation: rainbow 5s infinite; /* Rainbow animation */
         }
 
-        #artwork-status {
-            font-size: 20px;
-            margin-bottom: 20px;
+        @keyframes rainbow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
         }
 
         #emoji-container {
             display: flex;
-            justify-content: center;
+            flex-direction: column; /* Stack elements vertically */
             align-items: center;
-            font-size: 100px;
+            font-size: 50px; /* Initial size of ratKing */
             position: relative;
             flex-wrap: wrap; /* Wrap icons to new line */
+            margin-bottom: 20px; /* Space below the emoji container */
         }
 
         #emoji-container span {
             cursor: pointer;
-            margin: 0 20px;
+            margin: 20px 0; /* Space between ratKing and cake */
         }
 
         #connectButton {
@@ -46,75 +59,95 @@
             font-size: 18px;
             border-radius: 10px;
             border: none;
-            background-color: #f0f0f0;
-            box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.2);
-            margin-bottom: 20px;
+            background-color: #ff69b4; /* Pink background */
+            color: white; /* White text color */
+            margin: 20px 0; /* Space above and below the button */
+            transition: background-color 0.3s;
         }
 
         #connectButton:hover {
-            background-color: #ddd;
+            background-color: #ff85b4; /* Lighter pink on hover */
         }
 
         .hidden {
             display: none;
         }
 
-        .flash {
-            animation: flash 0.5s infinite alternate;
+        /* Text bubble for squeak */
+        .squeak-bubble {
+            position: absolute;
+            background-color: white;
+            color: black;
+            padding: 10px;
+            border-radius: 10px;
+            top: -50px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 20px;
         }
 
-        @keyframes flash {
-            from { opacity: 1; }
-            to { opacity: 0.3; }
+        /* Hearts animation */
+        .heart {
+            position: absolute;
+            color: red;
+            animation: float 2s infinite ease-in-out;
         }
 
+        @keyframes float {
+            0% { opacity: 0; transform: translateY(0); }
+            50% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-100px); }
+        }
+
+        /* Falling coin style */
+        .falling-coin {
+            position: absolute;
+            width: 50px; /* Adjust size as needed */
+            animation: fall 2s forwards;
+        }
+
+        @keyframes fall {
+            0% {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(200px); /* Adjust how far it falls */
+            }
+        }
     </style>
 </head>
 <body>
 
-    <h1>PLEASE RAT KING!</h1>
-    <div id="artwork-status">Loading...</div>
-    <button id="connectButton">Connect MetaMask</button>
+    <h1>Please Rat King!</h1>
 
-    <div id="emoji-container" class="hidden">
-        <span id="cake">🎂</span>
+    <div id="emoji-container">
         <span id="ratKing">🐁</span>
-        <span id="fire">🔥</span>
-        <span id="ratFood01" class="hidden">🍓</span> <!-- ratFood01 initially hidden -->
+        <button id="cake" style="font-size: 90px; background: none; border: none; cursor: pointer;">🎂</button>
+        
     </div>
+
+    <div id="feedMessage" style="font-size: 20px; background: none; border: none; cursor: pointer;"> Click to feed Rat King!</div>>
+
+    <div id="etherBalance">Ether Balance: 0 ETH</div>
+    <div id="totalEtherGiven">Total Ether Given: 0 ETH</div> <!-- Display total Ether given -->
+    <div id="ratKingdomPopulation">Rat Kingdom Population: 0</div> <!-- Display rat kingdom population -->
+    
+    <button id="connectButton">Connect MetaMask</button>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
     <script>
         const contractAddress = '0xfC5317F89B13524d764899635f27CB5C1Fa56387';
         const abi = [
             {
-                "anonymous": false,
-                "inputs": [
-                    {
-                        "indexed": false,
-                        "internalType": "bool",
-                        "name": "newStatus",
-                        "type": "bool"
-                    }
-                ],
-                "name": "StatusToggled",
-                "type": "event"
-            },
-            {
                 "inputs": [],
-                "name": "toggleStatus",
-                "outputs": [],
-                "stateMutability": "nonpayable",
-                "type": "function"
-            },
-            {
-                "inputs": [],
-                "name": "artworkStatus",
+                "name": "getTotalEtherReceived",
                 "outputs": [
                     {
-                        "internalType": "bool",
+                        "internalType": "uint256",
                         "name": "",
-                        "type": "bool"
+                        "type": "uint256"
                     }
                 ],
                 "stateMutability": "view",
@@ -123,84 +156,132 @@
         ];
 
         let provider, signer, contract;
+        let ratKingdomPopulationCount = 0; // Initialize rat kingdom population count
 
         document.getElementById('connectButton').addEventListener('click', async () => {
             if (typeof window.ethereum !== 'undefined') {
                 provider = new ethers.BrowserProvider(window.ethereum);
                 signer = await provider.getSigner();
                 contract = new ethers.Contract(contractAddress, abi, signer);
-                await getArtworkStatus();
+                await updateTotalEtherGiven(); // Update total Ether given
                 showEmoji();
-                document.getElementById('connectButton').classList.add('hidden');
+                document.getElementById('connectButton').classList.add('hidden'); // Hide button after connecting
+                await updateEtherBalance();
             } else {
                 alert('MetaMask is not installed.');
             }
         });
 
-        async function getArtworkStatus() {
-            const status = await contract.artworkStatus();
-            document.getElementById('artwork-status').innerText = status ? "THIS CONTRACT IS ART" : "THIS CONTRACT IS NOT ART";
+        async function updateEtherBalance() {
+            const balance = await signer.getBalance();
+            const etherString = ethers.formatEther(balance);
+            document.getElementById('etherBalance').innerText = `Ether Balance: ${etherString} ETH`;
+        }
+
+        async function updateTotalEtherGiven() {
+            const totalEther = await contract.getTotalEtherReceived();
+            const etherString = ethers.formatEther(totalEther);
+            document.getElementById('totalEtherGiven').innerText = `Total Ether Given: ${etherString} ETH`;
         }
 
         function showEmoji() {
             document.getElementById('emoji-container').classList.remove('hidden');
+            document.getElementById('etherBalance').classList.remove('hidden');
+            document.getElementById('totalEtherGiven').classList.remove('hidden');
+            document.getElementById('feedMessage').classList.remove('hidden');
+            document.getElementById('ratKingdomPopulation').classList.remove('hidden'); // Show population count
         }
 
         const ratKing = document.getElementById('ratKing');
         const cake = document.getElementById('cake');
-        const fire = document.getElementById('fire');
-        const ratFood01 = document.getElementById('ratFood01');
 
-        let ratKingSize = 100; // initial size for ratKing
+        let ratKingSize = 50; // initial size for ratKing
 
-        cake.addEventListener('click', () => {
-            ratKingSize += 50; // increase size
+        cake.addEventListener('click', async () => {
+            // Send Ether to ratKing
+            try {
+                const tx = await signer.sendTransaction({
+                    to: contractAddress,
+                    value: ethers.parseEther("0.01") // Send 0.01 ETH
+                });
+                await tx.wait();
+                
+                // Increase ratKing size after payment
+                increaseRatKingSize();
+
+                // Update total Ether given after payment
+                await updateTotalEtherGiven();
+
+                // Increase rat kingdom population count
+                ratKingdomPopulationCount++;
+                document.getElementById('ratKingdomPopulation').innerText = `Rat Kingdom Population: ${ratKingdomPopulationCount}`;
+
+                // Update ether balance
+                await updateEtherBalance();
+
+                // Display hearts around ratKing after payment
+                displayHearts();
+
+                // Flash and fall rCoin after payment
+                flashAndFallCoin();
+
+                // Create new ratCitizen after payment
+                createRatCitizen();
+            } catch (error) {
+                console.error('Transaction failed:', error);
+            }
+        });
+
+        function increaseRatKingSize() {
+            ratKingSize += 10; // Increase size by 10px
             ratKing.style.fontSize = `${ratKingSize}px`;
-        });
+        }
 
-        fire.addEventListener('mouseover', () => {
-            ratKing.classList.add('flash');
-            document.body.style.backgroundColor = 'red'; // flash screen red
-        });
-
-        fire.addEventListener('mouseout', () => {
-            ratKing.classList.remove('flash');
-            document.body.style.backgroundColor = 'lightpink'; // reset background color
-        });
-
-        fire.addEventListener('click', () => {
-            ratKingSize -= 50; // decrease size
-            if (ratKingSize > 0) {
-                ratKing.style.fontSize = `${ratKingSize}px`;
+        function displayHearts() {
+            for (let i = 0; i < 10; i++) {
+                const heart = document.createElement('div');
+                heart.className = 'heart';
+                heart.innerText = '❤️';
+                heart.style.left = `${Math.random() * 100}vw`;
+                heart.style.animationDuration = `${Math.random() * 2 + 1}s`;
+                document.body.appendChild(heart);
+                setTimeout(() => {
+                    heart.remove();
+                }, 3000);
             }
-        });
+        }
 
-        ratKing.addEventListener('dblclick', () => {
-            const newRatCitizen = document.createElement('span');
-            newRatCitizen.innerText = getRandomRatCitizen(); // get random rat citizen value
-            newRatCitizen.style.fontSize = '50px'; // smaller size
-            newRatCitizen.style.display = 'block'; // block display for wrapping
-            document.getElementById('emoji-container').appendChild(newRatCitizen);
-            ratFood01.classList.remove('hidden'); // show ratFood01 after ratCitizen creation
-        });
+        function flashAndFallCoin() {
+            const coin = document.createElement('img');
+            coin.src = 'rCoin.png'; // Path to the coin image
+            coin.className = 'falling-coin';
+            coin.style.left = `${Math.random() * 100}vw`; // Random horizontal position
+            coin.style.top = '20%'; // Start falling from 20% from the top
+            document.body.appendChild(coin);
 
-        ratFood01.addEventListener('click', () => {
-            const ratCitizen = document.querySelector('#emoji-container span:not(#ratKing):not(#cake):not(#fire)');
-            if (ratCitizen) {
-                const currentSize = parseInt(ratCitizen.style.fontSize);
-                ratCitizen.style.fontSize = `${currentSize + 10}px`; // increase size of ratCitizen
-            }
-        });
+            // Animate the coin falling
+            setTimeout(() => {
+                coin.remove(); // Remove the coin after falling
+            }, 2000); // Adjust timing as needed
+        }
 
-        ratFood01.addEventListener('dblclick', () => {
-            const ratCitizen = document.querySelector('#emoji-container span:not(#ratKing):not(#cake):not(#fire)');
-            if (ratCitizen) {
-                ratKing.classList.add('flash');
-            }
-        });
+        function createRatCitizen() {
+            const ratCitizen = document.createElement('span');
+            ratCitizen.innerText = '🐭'; // Rat citizen emoji
+            ratCitizen.className = 'squeak-bubble';
+            document.body.appendChild(ratCitizen);
 
-        function getRandomRatCitizen() {
-            return Math.random() < 0.5 ? '🐁' : '🐀'; // randomly return either 🐁 or 🐀
+            // Show squeak message
+            const squeakMessage = document.createElement('div');
+            squeakMessage.innerText = 'Squeak!';
+            squeakMessage.className = 'squeak-bubble';
+            document.body.appendChild(squeakMessage);
+
+            // Remove ratCitizen and squeak message after 2 seconds
+            setTimeout(() => {
+                ratCitizen.remove();
+                squeakMessage.remove();
+            }, 2000);
         }
     </script>
 </body>
